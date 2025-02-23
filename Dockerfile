@@ -1,15 +1,13 @@
-# Start with wolfi
-FROM cgr.dev/chainguard/wolfi-base
+# Build stage
+FROM golang:bookworm as builder
+ARG TARGETARCH
 
-# Set GOPATH and add to PATH
-ENV GOPATH=/go
-ENV PATH=$GOPATH/bin:$PATH
+# Install tools for target architecture
+RUN GOOS=linux GOARCH=$TARGETARCH go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest && \
+    GOOS=linux GOARCH=$TARGETARCH go install github.com/conductorone/baton/cmd/baton@latest
 
-RUN apk add --no-cache go
+# Final stage
+FROM golang:bookworm
+COPY --from=builder /go/bin/* /go/bin/
 
-# Install golangci-lint and baton
-RUN go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest && \
-    go install github.com/conductorone/baton/cmd/baton@latest
-
-# Set default command
-ENTRYPOINT ["/usr/bin/env", "sh"] 
+CMD ["bash"] 
